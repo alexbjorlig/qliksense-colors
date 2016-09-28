@@ -1,0 +1,175 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            .color {
+                display: inline-block;
+                height:20px;
+                width: 40px;
+            }
+        </style>
+
+
+    </head>
+    <body>
+
+        <input id="colors" type="text" placeholder="Colors (separated by comma)" value="#8AD2F1,#50D691,#EAE7E0,#B8AFA6,#FF665E,#F5E326,#77675B" />
+
+        <h4>Palette</h4>
+        <div id="palette"></div>
+        <div id="palette_code"></div>
+
+        <h4>Extended Palette</h4>
+        <div id="extended_palette"></div>
+        <div id="extended_palette_code"></div>
+
+        <h4>12 color scale</h4>
+        <div id="twelve_scale"></div>
+        <div id="twelve_scale_code"></div>
+
+        <h4>Sequential scale</h4>
+        <div id="sequential_scale"></div>
+        <div id="sequential_scale_code"></div>
+
+        <h4>Diverging scale</h4>
+        <div id="diverging_scale"></div>
+        <div id="diverging_scale_code"></div>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.2.1/chroma.min.js"></script>
+        <script type="text/javascript">
+
+            $('#colors').on('change', function(){
+               update_colors();
+            })
+
+            function update_colors() {
+                colors = $('#colors').val().split(',').map(function(c){return chroma(c)});
+                draw_scales(colors);
+            }
+
+            function draw_scales(colors) {
+                // Palette
+                palette = create_scale(colors, 12)
+                print_scale('#palette', palette);
+
+                // Extended Palette
+                extended_palette = create_scale(colors, 15)
+                print_scale('#extended_palette', extended_palette);
+
+
+                // 12 Color Scale
+                twelve_scale = create_pyramid(colors, 1, 12, 1)
+                print_pyramid('#twelve_scale', twelve_scale);
+
+
+                // Sequential Scale
+                sequential_scale = create_pyramid(colors, 1, 7, 1, 'lightness')
+                print_pyramid('#sequential_scale', sequential_scale);
+
+                // Diverging scale
+                diverging_scale = create_diverging(colors, 1, 10, 1, 'lightness');
+                print_pyramid('#diverging_scale', diverging_scale);
+            }
+
+            function create_scale(colors, num, type = 'regular') {
+            	if (num == 0) {
+            		return [];
+            	}
+                else if (num == 1) {
+                    return [chroma(colors[0]).hex()];
+                }
+                else if (type == 'regular') {
+                    return chroma.scale(colors).colors(num)
+                } else if (type == 'lightness') {
+                    color = colors[0]
+                    if(num > 2) {
+                        darkest_color = chroma(color).darken(Math.round((num-1)*0.1))
+                    } else { darkest_color = color }
+                    lightest_color = chroma(color).brighten(1)
+                    return chroma.scale([darkest_color, lightest_color]).colors(num)
+                }
+            }
+
+            function get_scale_html(color_scale) {
+                color_divs = $.map(color_scale, function(c){
+                    return '<div class="color" style="background-color: ' + c + ';"></div>';
+                });
+                return color_divs;
+            }
+
+            function print_scale(target, color_scale) {
+                color_divs = get_scale_html(color_scale);
+                $(target).html(color_divs);
+                $(target + '_code').html('<pre>'+JSON.stringify(color_scale)+'</pre>');
+            }
+
+            function create_pyramid(colors, top_count, bottom_count, step, type = 'regular') {
+                rows = [];
+                for(i = top_count; i <= bottom_count; i = i + step) {
+                    rows.push(create_scale(colors, i, type));
+                }
+                return rows;
+            }
+
+            function print_pyramid(target, pyramid) {
+                $(target).html("");
+                $(target + '_code').html("");
+                $.each(pyramid, function(i, row){
+                     $(target).append(get_scale_html(row));
+                     $(target).append('<br>')
+
+                     $(target + '_code').append('<pre>'+JSON.stringify(row)+',</pre>');
+                });
+            }
+
+            $(document).on('ready', function(){
+                update_colors();
+            })
+
+
+            function create_diverging(colors, top_count, bottom_count, step, type = 'regular') {
+            	color1 = colors[6];
+            	color2 = colors[5];
+            	rows = [];
+
+            	for(i = top_count; i <= bottom_count; i = i + step) {
+            		i1 = Math.floor(i/2);
+            		i2 = Math.ceil(i/2);
+
+            		console.log("i1" + i1 + " - i2:" + i2);
+
+            		scale = create_scale([color1], i1, type).concat(create_scale([color2], i2, type).reverse())
+            		rows.push(scale)
+
+            		console.log(scale);
+            	}
+            	return rows;
+            }
+
+        </script>
+    </body>
+</html>
+
+
+<!-- Testfarver: 
+#000000,#77675B,#B8AFA6,#EAE7E0,#8AD2F1,#50D691,#FF665E,#F5E326
+
+SORTERET:
+#8AD2F1,#50D691,#EAE7E0,#B8AFA6,#FF665E,#F5E326,#77675B
+
+
+#006570,#53ABBF,#740341,#E5057F,#72441B,#7b7a78
+
+
+
+
+
+
+
+-->
