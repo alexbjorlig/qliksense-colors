@@ -18,7 +18,7 @@
     </head>
     <body>
 
-        <input id="colors" type="text" placeholder="Colors (separated by comma)" value="#8AD2F1,#50D691,#EAE7E0,#B8AFA6,#FF665E,#F5E326,#77675B" />
+        <input id="colors" type="text" placeholder="Colors (separated by comma)" value="#8AD2F1,#50D691,#FF665E,#F5E326,#B8AFA6,#77675B" />
 
         <h4>Palette</h4>
         <div id="palette"></div>
@@ -55,7 +55,7 @@
 
             function draw_scales(colors) {
                 // Palette
-                palette = create_scale(colors, 12)
+                palette = create_palette(colors);
                 print_scale('#palette', palette);
 
                 // Extended Palette
@@ -75,6 +75,16 @@
                 // Diverging scale
                 diverging_scale = create_diverging(colors, 1, 10, 1, 'lightness');
                 print_pyramid('#diverging_scale', diverging_scale);
+            }
+
+            function create_palette(colors) {
+              palette = [];
+              palette = palette.concat(['#b0afae', '#7b7a78', '#545352']) // Add gray scale colors
+              palette = palette.concat(create_scale([colors[0]], 3, 'lightness')); // Create primary color gradients
+              palette = palette.concat(colors.slice(1,5).map(function(c){return chroma(c).hex()})); // Add following 4 colors
+              palette = palette.concat(['#fff', '#000']);
+              console.log(palette);
+              return palette;
             }
 
             function create_scale(colors, num, type = 'regular') {
@@ -134,20 +144,16 @@
 
 
             function create_diverging(colors, top_count, bottom_count, step, type = 'regular') {
-            	color1 = colors[6];
-            	color2 = colors[5];
+            	color1 = colors[5];
+            	color2 = colors[3];
             	rows = [];
 
             	for(i = top_count; i <= bottom_count; i = i + step) {
             		i1 = Math.floor(i/2);
             		i2 = Math.ceil(i/2);
 
-            		console.log("i1" + i1 + " - i2:" + i2);
-
-            		scale = create_scale([color1], i1, type).concat(create_scale([color2], i2, type).reverse())
+          		  scale = create_scale([color1], i1, type).concat(create_scale([color2], i2, type).reverse())
             		rows.push(scale)
-
-            		console.log(scale);
             	}
             	return rows;
             }
@@ -157,11 +163,11 @@
 </html>
 
 
-<!-- Testfarver: 
+<!-- Testfarver:
 #000000,#77675B,#B8AFA6,#EAE7E0,#8AD2F1,#50D691,#FF665E,#F5E326
 
 SORTERET:
-#8AD2F1,#50D691,#EAE7E0,#B8AFA6,#FF665E,#F5E326,#77675B
+#8AD2F1,#50D691,#FF665E,#F5E326,#B8AFA6,#77675B
 
 
 #006570,#53ABBF,#740341,#E5057F,#72441B,#7b7a78
