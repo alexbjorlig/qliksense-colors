@@ -6,11 +6,20 @@
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+        <link rel="stylesheet" href="dependencies/tokenize2/tokenize2.min.css" />
+        <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
         <style>
+
             .color {
                 display: inline-block;
                 height:20px;
                 width: 40px;
+            }
+
+            .token, .color-select option {
+            	color: #333;
+            	text-shadow: 0px 0px 1px #AAA;
             }
         </style>
 
@@ -18,39 +27,109 @@
     </head>
     <body>
 
-        <input id="colors" type="text" placeholder="Colors (separated by comma)" value="#8AD2F1,#50D691,#FF665E,#F5E326,#B8AFA6,#77675B" />
+        <!--<input id="colors" type="text" placeholder="Colors (separated by comma)" value="#8AD2F1,#50D691,#FF665E,#F5E326,#B8AFA6,#77675B" />-->
+        <div class="container-fluid">
+        	<div class="col-md-12">
+        		<h1>Qlik Sense Colors</h1>
+		        <select id="colors" class="form-control" multiple>
+		        </select>
+			</div>
+		
+			<div class="col-md-12">
+		        <h4>Palette</h4>
+		        <div id="palette"></div>
+		        <div id="palette_code"></div>
+		    </div>
 
-        <h4>Palette</h4>
-        <div id="palette"></div>
-        <div id="palette_code"></div>
+		    <div class="col-md-12">
+		        <h4>Extended Palette</h4>
+		        <div id="extended_palette"></div>
+		        <div id="extended_palette_code"></div>
+		    </div>
 
-        <h4>Extended Palette</h4>
-        <div id="extended_palette"></div>
-        <div id="extended_palette_code"></div>
+		    <div class="col-md-12">
+		        <h4>12 color scale</h4>
+		        <div id="twelve_scale"></div>
+		        <div id="twelve_scale_code"></div>
+		    </div>
 
-        <h4>12 color scale</h4>
-        <div id="twelve_scale"></div>
-        <div id="twelve_scale_code"></div>
+		    <div class="col-md-12">
+		        <h4>Sequential scale</h4>
+		        <div class="row">
+		        	<div class="col-md-2">
+		        		<select id="sequential_color" class="form-control color-select"></select>
+		        	</div>
+		        </div>
+		        <div id="sequential_scale"></div>
+		        <div id="sequential_scale_code"></div>
+		    </div>
 
-        <h4>Sequential scale</h4>
-        <div id="sequential_scale"></div>
-        <div id="sequential_scale_code"></div>
+		    <div class="col-md-12">
+		        <h4>Diverging scale</h4>
+		        <div class="row">
+		        	<div class="col-md-2">
+		        		<select id="diverging_color1" class="form-control color-select"></select>
+		        	</div>
+		        	<div class="col-md-2">
+		        		<select id="diverging_color2" class="form-control color-select"></select>
+		        	</div>
+		        </div>
+		        <div id="diverging_scale"></div>
+		        <div id="diverging_scale_code"></div>
+		    </div>
 
-        <h4>Diverging scale</h4>
-        <div id="diverging_scale"></div>
-        <div id="diverging_scale_code"></div>
+        </div>
 
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-throttle-debounce/1.1/jquery.ba-throttle-debounce.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.2.1/chroma.min.js"></script>
+        <script src="dependencies/tokenize2/tokenize2.min.js"></script>
         <script type="text/javascript">
 
-            $('#colors').on('change', function(){
-               update_colors();
-            })
+        	$('#colors').tokenize2({sortable: true, tokensAllowCustom: true, placeholder: "Base colors"});
+
+            $('#colors').on('DOMSubtreeModified', $.debounce(200, update_colors))
+            $('.color-select').on('change', update_colors)
 
             function update_colors() {
-                colors = $('#colors').val().split(',').map(function(c){return chroma(c)});
-                draw_scales(colors);
+                colors = $('#colors').val();
+                if(colors != null){
+                	update_token_colors();
+                	update_selectors(colors);
+                	colors.map(function(c){return chroma(c)});
+                	draw_scales(colors);
+                }
+            }
+
+            function update_token_colors() {
+            	$.each($(".tokens-container li.token"), function(i, token){
+            		$(token).css('background-color', $(token).attr('data-value'));
+            	});
+            }
+
+            function update_selectors(colors) {
+
+            	// Save previous selection
+            	prev_values = {}
+            	selectors = $(".color-select");
+            	$.each(selectors, function(i, selector){
+            		prev_values[selector.id] = $(selector).val();
+            	})
+
+            	// Update with new colors
+            	$(".color-select").empty();
+            	$.each(colors, function(i, color){
+            		option = "<option value='" + color + "' style='background-color: " + color + "'>" + color + "</option>"
+            		$(".color-select").append(option)
+            	})
+
+            	// Restore previous selection if possible
+            	$.each(selectors, function(i, selector){
+            		prev_color = prev_values[selector.id]
+            		prev_color_option = $(selector).find("option[value='"+prev_color+"']")
+            		if(prev_color_option) { prev_color_option.prop('selected', true) }
+            	})
             }
 
             function draw_scales(colors) {
@@ -69,11 +148,14 @@
 
 
                 // Sequential Scale
-                sequential_scale = create_pyramid(colors, 1, 7, 1, 'lightness')
+                sequential_color = $("#sequential_color").val()
+                sequential_scale = create_pyramid([sequential_color], 1, 7, 1, 'lightness')
                 print_pyramid('#sequential_scale', sequential_scale);
 
                 // Diverging scale
-                diverging_scale = create_diverging(colors, 1, 10, 1, 'lightness');
+                diverging_color1 = $("#diverging_color1").val()
+                diverging_color2 = $("#diverging_color2").val()
+                diverging_scale = create_diverging([diverging_color1, diverging_color2], 1, 10, 1, 'lightness');
                 print_pyramid('#diverging_scale', diverging_scale);
             }
 
@@ -83,7 +165,6 @@
               palette = palette.concat(create_scale([colors[0]], 3, 'lightness')); // Create primary color gradients
               palette = palette.concat(colors.slice(1,5).map(function(c){return chroma(c).hex()})); // Add following 4 colors
               palette = palette.concat(['#fff', '#000']);
-              console.log(palette);
               return palette;
             }
 
@@ -130,12 +211,16 @@
             function print_pyramid(target, pyramid) {
                 $(target).html("");
                 $(target + '_code').html("");
+                pyramid_code = "";
+                pyramid_code += "<pre>";
                 $.each(pyramid, function(i, row){
                      $(target).append(get_scale_html(row));
                      $(target).append('<br>')
 
-                     $(target + '_code').append('<pre>'+JSON.stringify(row)+',</pre>');
+                     pyramid_code += JSON.stringify(row) + ",\n";
                 });
+                pyramid_code += "</pre>";
+                $(target + '_code').html(pyramid_code);
             }
 
             $(document).on('ready', function(){
@@ -144,8 +229,8 @@
 
 
             function create_diverging(colors, top_count, bottom_count, step, type = 'regular') {
-            	color1 = colors[5];
-            	color2 = colors[3];
+            	color1 = colors[0];
+            	color2 = colors[1];
             	rows = [];
 
             	for(i = top_count; i <= bottom_count; i = i + step) {
