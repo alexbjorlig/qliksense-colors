@@ -29,9 +29,26 @@
         <div class="container-fluid">
         	<div class="col-md-12">
         		<h1>Qlik Sense Colors</h1>
-		        <select id="colors" class="form-control" multiple></select>
-		        <em><strong>Example:</strong> #8AD2F1,#50D691,#FF665E,#F5E326,#B8AFA6,#77675B</em><br><br>
+                <hr>
+            </div>
+
+            <div class="col-md-12">
+                <h3>1. Upload theme.json <small>Optional</small></h3>
+                <input id="fileInput" type="file" accept=".json">
+                <div id="config-status"></div>
 			</div>
+
+            <div class="col-md-12">
+                <hr>
+                <h3>2. Choose primary colors</h3>
+                <select id="colors" class="form-control" multiple></select>
+                <em><strong>Example:</strong> #8AD2F1,#50D691,#FF665E,#F5E326,#B8AFA6,#77675B</em><br><br>
+            </div>
+
+            <div class="col-md-12">
+                <hr>
+                <h3>3. Customize and verify</h3>
+            </div>
 		
 			<div class="col-md-12">
 		        <h4>Palette</h4>
@@ -76,6 +93,13 @@
 		        <div id="diverging_scale_code"></div>
 		    </div>
 
+            <div class="col-md-12">
+                <hr>
+                <h3>4. Download the updated config.json <small>Optional</small></h3>
+                <a id="download" class="btn btn-primary btn-large">Download theme.json</a>
+                <a id="fileDownload" class="hidden" href="##">download file</a>
+            </div>
+
         </div>
 
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
@@ -83,12 +107,22 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-throttle-debounce/1.1/jquery.ba-throttle-debounce.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.2.1/chroma.min.js"></script>
         <script src="dependencies/tokenize2/tokenize2.min.js"></script>
+        <script src="upload.js"></script>
+        <script src="download.js"></script>
         <script type="text/javascript">
 
         	$('#colors').tokenize2({sortable: true, tokensAllowCustom: true, placeholder: "Base colors"});
 
             $('#colors').on('DOMSubtreeModified', $.debounce(200, update_colors))
             $('.color-select').on('change', update_colors)
+
+            // Variables
+            var palette,
+                extended_palette,
+                twelve_scale,
+                sequential_scale,
+                diverging_scale;
+
 
             function update_colors() {
                 colors = $('#colors').val();
